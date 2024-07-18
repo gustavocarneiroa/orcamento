@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.tiny.cloud/1/7pwvcweolg1rq82vb4bit2c48qabxzee6zxsjnk248wl888u/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <title>Orçamentos</title>
+</head>
+<body>
+    <div class="container-fluid">
+        <div id="app" class="my-5">
+            <h1>Orçamentos</h1>
+            <div>
+                <div class="form-group row">
+                    <div class="col-md-4 row">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="nome" name="nome" v-model="nome"  placeholder="Fulano da Silva Sauro" required>
+                            <label for="nome">Nome</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4 row">
+                        <div class="form-floating mb-3">
+                            <input type="text" id="telefone" class="form-control" name="telefone" placeholder="(99) 99999-9999"
+                            v-model="mask.telefone" required>
+                            <label for="telefone">Whatsapp</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4 row">
+                        <div class="form-floating mb-3">
+                            <input type="email" id="email" class="form-control" name="email" v-model="email" placeholder="hello@teacher-kessia.com" required>
+                            <label for="email">Email</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-4">
+                        <div class="form-floating mb-3">
+                            <input type="date" class="form-control" id="dataInicial" v-model="dataInicial">
+                            <label for="dataInicial">Data inicial</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-floating mb-3">
+                            <select class="form-select" v-model="addTempoDeContrato" @change="updateEndDate">
+                                <option selected value= "">Selecione um período</option>
+                                <option value="90">3 meses (90 dias)</option>
+                                <option value="180">6 meses (180 dias)</option>
+                                <option value="365">12 meses (365 dias)</option>
+                            </select>
+                            <label for="dataInicial">Tempo de contrato</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-floating mb-3">
+                            <input type="date" class="form-control" id="dataFinal" v-model="dataFinal">
+                            <label for="dataFinal">Data final</label>
+                        </div>
+                    </div>
+                </div>
+    
+                <div class="form-group">
+                    <label class="mr-2">Dias da semana:</label>
+                    <template v-for="(dia, index) in diasSelecionados">
+                        <div class="form-check form-switch form-check-inline">
+                            <input type="checkbox" class="form-check-input" :id="'dia_da_semana'+index" v-model="dia.selected">
+                            <label :for="'dia_da_semana'+index" class="form-check-label"
+                                style="text-transform: capitalize;">{{ dia.nome }}</label>
+                        </div>
+                    </template>
+                </div>
+                <div class="form-group">
+                    <button type="button" @click="contarDiasDaSemana" class="btn btn-primary"
+                        :disabled="!dataInicial || !dataFinal || !totalDias">Simular</button>
+                </div>
+    
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="row" v-if="simulado">
+                            <div class="col-md-9">
+                                <h3>Simulação</h3>
+                                <div class="card bg-secondary">
+                                    <div class="card-body">
+                                        <div class="card-title">
+                                            Horário das aulas
+                                        </div>
+                                        <div v-for="(obj, index) in diasSelecionados" :key="index">
+                                            <div v-if="obj.selected" class="form-group row">
+                                                <label for="dataFinal" class="col-sm-2 col-form-label"
+                                                    style="text-transform: capitalize;">{{ obj.nome }}:</label>
+                                                <div class="col-sm-6">
+                                                    <input type="time" class="form-control" v-model="obj.horario" @input="atualizarTurno(index)">
+                                                </div>
+                                                <div class="col-sm-4">
+                                                    <input type="number" step="0.5" class="form-control" v-model.number="obj.horas">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="valorDaHora" class="col-sm-2 col-form-label">Valor da hora (individual)</label>
+                                    <div class="col-sm-2">
+                                        <input type="number" class="form-control" id="valorDaHora" v-model="valorDaHora">
+                                    </div>
+                                    <label for="valorDaHoraDupla" class="col-sm-2 col-form-label">Valor da hora (dupla)</label>
+                                    <div class="col-sm-2">
+                                        <input type="number" class="form-control" id="valorDaHoraDupla" v-model="valorDaHoraDupla">
+                                    </div>
+                                    <label for="valorDaHoraTrio" class="col-sm-2 col-form-label">Valor da hora (trio)</label>
+                                    <div class="col-sm-2">
+                                        <input type="number" class="form-control" id="valorDaHoraTrio" v-model="valorDaHoraTrio">
+                                    </div>
+                                </div>
+            
+                                <div class="form-group row">
+                                    <label for="desconto" class="col-sm-2 col-form-label">Desconto a vista:</label>
+                                    <div class="col-sm-10">
+                                        <input type="number" class="form-control" id="desconto" v-model="desconto">
+                                    </div>
+                                </div>
+            
+                                <div class="form-group row">
+                                    <label for="delocamento" class="col-sm-2 col-form-label">Custo de deslocamento por aula:</label>
+                                    <div class="col-sm-10">
+                                        <input type="number" class="form-control" id="delocamento" v-model="deslocamento">
+                                    </div>
+                                </div>
+            
+                                <div class="form-group row">
+                                    <label for="parcelamento" class="col-sm-2 col-form-label">Parcelamento:</label>
+                                    <div class="col-sm-10">
+                                        <input type="number" class="form-control" id="parcelamento" v-model="parcelamento">
+                                    </div>
+                                </div>
+                                <p v-for="{nome, dia} in diasFiltered" :key="dia">
+                                    Total de aulas na {{ nome }}: {{ diasDaSemana[dia].length }}
+                                </p>
+                                <p>Total de aulas: {{ totalAulas }}</p>
+                                <p v-if="valorDaHora > 0"><b>Valor de horas aula: R$ {{ valor_geral.toFixed(2) }}</b></p>
+                                <p v-if="deslocamento > 0">
+                                    <b>Valor do deslocamento a vista: R$ {{ valor_deslocamento.toFixed(2)}}</b>
+                                </p>
+                                <div class="row">
+                                    <span class="col-md-6" v-if="valorDaHora > 0 && desconto > 0">
+                                        <h2>A vista</h2>
+                                        <p>
+                                            <b>Valor de horas aula com desconto: <span style="text-decoration: line-through;">R$ {{ valor_geral.toFixed(2) }}</span> R$ {{ valor_a_vista.toFixed(2) }}</b>
+                                        </p>
+                                        
+                                        <h3 v-if="deslocamento > 0">
+                                            Valor a vista: {{ (valor_a_vista + valor_deslocamento).toFixed(2) }}
+                                        </h3>
+                                    </span>
+            
+                                    <span class="col-md-6" v-if="parcelamento > 1">
+                                        <h2>Parcelado</h2>
+                                        <p v-if="valorDaHora > 0">
+                                            <b>Valor por parcela: R$ {{ valor_parcelado.toFixed(2) }} x{{ parcelamento}}</b></p>
+                                        <p v-if="deslocamento > 0">
+                                            <b>Valor do deslocamento por parcela: R$ {{ (valor_deslocamento / parcelamento).toFixed(2) }} x{{ parcelamento}}</b>
+                                        </p>
+                                        <h3 v-if="valorDaHora > 0 && deslocamento > 0">
+                                            Valor parcelado: R$ {{ valor_parcela_deslocamento.toFixed(2) }} x{{parcelamento}}
+            
+                                        </h3>
+                                    </span>
+                                    <div class="row">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" id="orcamentoIndividual"  v-model="tipoDeOrcamento" value="individual">
+                                            <label class="form-check-label" for="orcamentoIndividual">
+                                              Individual
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" id="orcamentoDupla"  v-model="tipoDeOrcamento" value="dupla">
+                                            <label class="form-check-label" for="orcamentoDupla">
+                                                Dupla
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" id="orcamentoTrio"  v-model="tipoDeOrcamento" value="trio">
+                                            <label class="form-check-label" for="orcamentoTrio">
+                                                Trio
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <button type="button" @click="sendToWhatsapp()" :disabled="!mask.telefone"> Enviar para Whatsapp ({{ tipoDeOrcamento }}) </button>
+                                    <button type="button" disabled> Enviar por e-mail ({{ tipoDeOrcamento }}) </button>
+                                </div>
+                            </div>
+                            <!-- <div class="col-md-3">
+                                <template v-for="(_, dia) in diasDaSemana">
+                                    <div v-if="diasSelecionados.includes(+dia)">
+            
+                                        <ul class="list-group">
+                                            <li class="list-group-item active">Dias de {{ nomeDoDia[dia] }}:</li>
+                                            <li v-for="(d, i) of diasDaSemana[dia]"
+                                                class="list-group-item list-group-item-secondary">
+                                                <span class="badge badge-primaty">{{ i + 1 }}</span>
+                                                {{ d.split('T')[0].split('-').reverse().join('/') }}
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </template>
+                            </div> -->
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group row">
+                            <label for="dataIgnorada" class="col-sm-2 col-form-label">Ignorar data:</label>
+                            <div class="col-sm-7">
+                                <input type="date" class="form-control" id="dataIgnorada" v-model="dataIgnorada">
+                            </div>
+                            <div class="col-sm-3">
+                                <button type="button" @click="adicionarDataIgnorada(dataIgnorada)" class="btn btn-primary"
+                                    :disabled="!dataIgnorada">Adicionar</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn-primary" @click="toggleFeriados">Mostrar/ocultar feriados</button>
+                            <ul class="list-group">
+                                <li v-for="(data, index) in mostrarDatas" class="list-group-item" :key="index">
+                                    {{ data }} 
+                                    <button 
+                                        type="button" 
+                                        @click="removerDataIgnorada(data)" 
+                                        class="btn btn-danger btn-sm"
+                                        style="float: right;"
+                                    >
+                                        Remover
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="/js/vue.contract.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js" integrity="sha384-fbbOQedDUMZZ5KreZpsbe1LCZPVmfTnH7ois6mU1QK+m14rQ1l2bGBq41eYeM/fS" crossorigin="anonymous"></script>   
+</body>
+</html>
